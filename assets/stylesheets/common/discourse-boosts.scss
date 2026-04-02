@@ -1,0 +1,19 @@
+@import "discourse-boosts-list";
+@import "discourse-boosts-bubble";
+@import "discourse-boosts-editor";
+@import "discourse-boosts-activity";
+
+// Reset boost button sizing when the UC modernize foundation theme is active.
+// Core applies padding-block/height/width to all buttons; these buttons need
+// their original compact sizing preserved.
+body.uc-modernize-foundation-theme {
+  .discourse-boosts {
+    &__emoji-btn,
+    &__submit.btn,
+    &__cancel.btn {
+      padding-block: 0;
+      height: 24px;
+      width: 24px;
+    }
+  }
+}
