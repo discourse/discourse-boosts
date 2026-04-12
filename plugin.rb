@@ -3,6 +3,7 @@
 # name: discourse-boosts
 # about: Allows users to add freeform micro-reactions (boosts) to posts.
 # version: 0.1
+# required_version: 2026.4.0-latest
 # authors: discourse
 # url: https://github.com/discourse/discourse-boosts
 
