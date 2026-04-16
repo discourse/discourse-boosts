@@ -109,6 +109,7 @@ after_initialize do
 
   register_reviewable_type DiscourseBoosts::ReviewableBoost
   DiscoursePluginRegistry.register_flag_applies_to_type("DiscourseBoosts::Boost", self)
+  register_seedfu_fixtures(Rails.root.join("plugins", "discourse-boosts", "db", "fixtures"))
 
   register_notification_consolidation_plan(
     DiscourseBoosts::NotificationConsolidation.boosted_by_multiple_users_plan,
