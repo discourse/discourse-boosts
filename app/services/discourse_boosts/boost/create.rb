@@ -61,7 +61,8 @@ module DiscourseBoosts
       DiscourseBoosts::Boost.publish_add(post, boost)
     end
 
-    def notify_post_author?(post:)
+    def notify_post_author?(post:, guardian:)
+      return false if post.user.ignored_user_ids.include?(guardian.user.id)
       post.user.user_option.boost_notifications_level != 2
     end
 
