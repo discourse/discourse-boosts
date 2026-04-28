@@ -148,6 +148,16 @@ RSpec.describe DiscourseBoosts::Boost::Create do
           expect { result }.not_to change { Notification.count }
         end
       end
+
+      context "when post author has ignored the acting user" do
+        before { Fabricate(:ignored_user, user: post_author, ignored_user: acting_user) }
+
+        it { is_expected.to run_successfully }
+
+        it "does not create a notification" do
+          expect { result }.not_to change { Notification.count }
+        end
+      end
     end
 
     context "when a duplicate key error occurs while creating the boost" do
