@@ -34,11 +34,7 @@ describe "Flagging a boost" do
 
     review_page.visit_reviewable(reviewable)
 
-    review_page.select_bundled_action(
-      reviewable,
-      I18n.t("discourse_boosts.reviewables.actions.agree_and_delete.title"),
-      bundle_index: 1,
-    )
+    review_page.select_bundled_action(reviewable, "boost-agree_and_delete", bundle_index: 1)
 
     expect(review_page).to have_reviewable_with_approved_status(reviewable)
 
