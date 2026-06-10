@@ -28,14 +28,28 @@ after_initialize do
     TopicView.prepend DiscourseBoosts::TopicViewExtension
   end
 
-  Discourse::Application.routes.append { mount DiscourseBoosts::Engine, at: "/" }
+  Discourse::Application.routes.append do
+    mount DiscourseBoosts::Engine, at: "/"
+  end
+
+  add_to_class(:guardian, :can_boost_post?) do |post|
+    authenticated? && post && can_see_post?(post) && !user.silenced? &&
+      !post.topic&.archived? && !post.trashed? && post.user_id.present? &&
+      !is_my_own?(post)
+  end
 
   TopicView.on_preload do |topic_view|
     if SiteSetting.discourse_boosts_enabled
-      topic_view.instance_variable_set(:@posts, topic_view.posts.includes(boosts: :user))
+      topic_view.instance_variable_set(
+        :@posts,
+        topic_view.posts.includes(boosts: :user)
+      )
 
       topic_view.boosts_available_flags =
-        Flag.enabled.where("'DiscourseBoosts::Boost' = ANY(applies_to)").pluck(:name_key)
+        Flag
+          .enabled
+          .where("'DiscourseBoosts::Boost' = ANY(applies_to)")
+          .pluck(:name_key)
     end
   end
 
@@ -43,15 +57,19 @@ after_initialize do
     :post,
     :boosts,
     include_condition: -> do
-      SiteSetting.discourse_boosts_enabled && object.association(:boosts).loaded?
-    end,
+      SiteSetting.discourse_boosts_enabled &&
+        object.association(:boosts).loaded?
+    end
   ) do
     boosts = object.boosts
 
     if scope.user
       ignored_user_ids = scope.user.ignored_user_ids
       if ignored_user_ids.present?
-        boosts = boosts.reject { |b| ignored_user_ids.include?(b.user_id) && !b.user&.staff? }
+        boosts =
+          boosts.reject do |b|
+            ignored_user_ids.include?(b.user_id) && !b.user&.staff?
+          end
       end
     end
 
@@ -66,7 +84,10 @@ after_initialize do
             if all_boost_ids.present?
               Reviewable
                 .includes(:reviewable_scores)
-                .where(target_type: "DiscourseBoosts::Boost", target_id: all_boost_ids)
+                .where(
+                  target_type: "DiscourseBoosts::Boost",
+                  target_id: all_boost_ids
+                )
                 .index_by(&:target_id)
             else
               {}
@@ -78,7 +99,10 @@ after_initialize do
 
     available_flags =
       @topic_view&.boosts_available_flags ||
-        Flag.enabled.where("'DiscourseBoosts::Boost' = ANY(applies_to)").pluck(:name_key)
+        Flag
+          .enabled
+          .where("'DiscourseBoosts::Boost' = ANY(applies_to)")
+          .pluck(:name_key)
 
     boosts.map do |boost|
       DiscourseBoosts::BoostSerializer.new(
@@ -86,7 +110,7 @@ after_initialize do
         scope: scope,
         root: false,
         reviewables_by_target: reviewables_by_target,
-        available_flags: available_flags,
+        available_flags: available_flags
       ).as_json
     end
   end
@@ -95,23 +119,31 @@ after_initialize do
     :post,
     :can_boost,
     include_condition: -> do
-      SiteSetting.discourse_boosts_enabled && object.association(:boosts).loaded?
-    end,
+      SiteSetting.discourse_boosts_enabled &&
+        object.association(:boosts).loaded?
+    end
   ) do
-    scope.user.present? && !scope.user.silenced? && object.user_id != scope.user&.id &&
+    scope.can_boost_post?(object) &&
       object.boosts.none? { |b| b.user_id == scope.user.id } &&
       object.boosts.size < SiteSetting.discourse_boosts_max_per_post
   end
 
   UserUpdater::OPTION_ATTR.push(:boost_notifications_level)
 
-  add_to_serializer(:user_option, :boost_notifications_level) { object.boost_notifications_level }
+  add_to_serializer(:user_option, :boost_notifications_level) do
+    object.boost_notifications_level
+  end
 
   register_reviewable_type DiscourseBoosts::ReviewableBoost
-  DiscoursePluginRegistry.register_flag_applies_to_type("DiscourseBoosts::Boost", self)
-  register_seedfu_fixtures(Rails.root.join("plugins", "discourse-boosts", "db", "fixtures"))
+  DiscoursePluginRegistry.register_flag_applies_to_type(
+    "DiscourseBoosts::Boost",
+    self
+  )
+  register_seedfu_fixtures(
+    Rails.root.join("plugins/discourse-boosts/db/fixtures")
+  )
 
   register_notification_consolidation_plan(
-    DiscourseBoosts::NotificationConsolidation.boosted_by_multiple_users_plan,
+    DiscourseBoosts::NotificationConsolidation.boosted_by_multiple_users_plan
   )
 end
