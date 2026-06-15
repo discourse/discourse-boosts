@@ -32,6 +32,10 @@ module DiscourseBoosts
       object.user.name
     end
 
+    def include_name?
+      SiteSetting.enable_names?
+    end
+
     def avatar_template
       object.user.avatar_template
     end

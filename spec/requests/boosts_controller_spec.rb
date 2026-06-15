@@ -351,6 +351,36 @@ RSpec.describe DiscourseBoosts::BoostsController do
         expect(response.status).to eq(200)
         expect(response.parsed_body["boosts"].length).to eq(1)
       end
+
+      context "when names are enabled" do
+        before { SiteSetting.enable_names = true }
+
+        it "exposes the post author's name" do
+          post_author.update!(name: "Post Author Name")
+
+          get "/discourse-boosts/users/#{current_user.username}/boosts-given.json"
+
+          expect(response.status).to eq(200)
+          expect(response.parsed_body["boosts"].first["post"]["name"]).to eq(
+            "Post Author Name"
+          )
+        end
+      end
+
+      context "when names are disabled" do
+        before { SiteSetting.enable_names = false }
+
+        it "does not expose the post author's name" do
+          post_author.update!(name: "Post Author Name")
+
+          get "/discourse-boosts/users/#{current_user.username}/boosts-given.json"
+
+          expect(response.status).to eq(200)
+          expect(response.parsed_body["boosts"].first["post"]).not_to have_key(
+            "name"
+          )
+        end
+      end
     end
 
     context "when logged in" do
