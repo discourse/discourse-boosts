@@ -105,6 +105,13 @@ export default class BoostEditor extends Component {
       return;
     }
 
+    // Browsers leave a filler <br>/empty node behind when the field is emptied.
+    // Strip it so the placeholder reappears (:empty) and the leftover node
+    // doesn't render as a stray newline or push the next emoji onto a new line.
+    if (stats.length === 0 && this.#editor.innerHTML !== "") {
+      this.#editor.innerHTML = "";
+    }
+
     this.#previousHTML = this.#editor.innerHTML;
     const value = serialize(this.#editor);
     this.#updateCanAddEmoji(stats);
@@ -143,8 +150,8 @@ export default class BoostEditor extends Component {
   @action
   insertEmoji(code) {
     const stats = getStats(this.#editor);
-    const needsSpace = this.#editor.childNodes.length > 0;
-    const extraLength = needsSpace ? 2 : 1;
+    const hasContent = stats.length > 0;
+    const extraLength = hasContent ? 2 : 1;
 
     if (
       stats.length + extraLength > MAX_LENGTH ||
@@ -153,8 +160,11 @@ export default class BoostEditor extends Component {
       return;
     }
 
-    if (needsSpace) {
+    if (hasContent) {
       this.#editor.appendChild(document.createTextNode(" "));
+    } else {
+      // Drop any filler <br>/empty node so the emoji isn't pushed onto a new line.
+      this.#editor.innerHTML = "";
     }
 
     this.#editor.appendChild(createEmojiImg(code));
@@ -171,7 +181,7 @@ export default class BoostEditor extends Component {
   }
 
   #updateCanAddEmoji(stats) {
-    const spaceNeeded = this.#editor.childNodes.length > 0 ? 2 : 1;
+    const spaceNeeded = stats.length > 0 ? 2 : 1;
     this.canAddEmoji =
       stats.length + spaceNeeded <= MAX_LENGTH && stats.emojiCount < MAX_EMOJI;
   }
@@ -222,7 +232,6 @@ export default class BoostEditor extends Component {
   }
 
   <template>
-    {{! template-lint-disable no-invalid-interactive }}
     <div
       class="discourse-boosts__input"
       contenteditable="true"
