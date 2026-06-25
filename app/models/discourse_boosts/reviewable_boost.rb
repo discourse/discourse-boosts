@@ -73,7 +73,7 @@ module DiscourseBoosts
 
       build_action(actions, :disagree, icon: "far-eye", bundle: disagree_bundle)
       build_action(actions, :ignore, icon: "xmark", bundle: disagree_bundle)
-      build_action(actions, :delete_and_agree, icon: "trash-can", bundle: disagree_bundle)
+      build_action(actions, :delete_and_ignore, icon: "trash-can", bundle: disagree_bundle)
     end
 
     def perform_agree_and_keep_boost(performed_by, args)

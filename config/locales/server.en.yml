@@ -39,7 +39,7 @@ en:
         ignore:
           title: "Ignore Flag"
           description: "Remove it from the queue without taking action."
-        delete_and_agree:
+        delete_and_ignore:
           title: "Delete Boost"
           description: "Delete the boost and ignore the flag."
   reviewables:
