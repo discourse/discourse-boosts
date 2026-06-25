@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 RSpec.describe DiscourseBoosts::Boost::Create do
+  before { SiteSetting.discourse_boosts_enabled = true }
+
   describe described_class::Contract, type: :model do
     it { is_expected.to validate_presence_of(:post_id) }
     it { is_expected.to validate_presence_of(:raw) }
