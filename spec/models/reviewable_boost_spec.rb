@@ -32,6 +32,50 @@ RSpec.describe DiscourseBoosts::ReviewableBoost do
       expect(actions.has?(:delete_and_ignore)).to eq(true)
       expect(actions.has?(:delete_and_agree)).to eq(false)
     end
+
+    it "hides delete actions when the boost post was deleted" do
+      boost.update_column(:post_id, -1)
+
+      actions = reviewable.actions_for(admin.guardian)
+
+      expect(actions.has?(:ignore)).to eq(true)
+      expect(actions.has?(:agree_and_delete)).to eq(false)
+      expect(actions.has?(:delete_and_ignore)).to eq(false)
+    end
+
+    it "hides delete actions when the boost post is trashed" do
+      post.trash!(admin)
+
+      actions = reviewable.actions_for(admin.guardian)
+
+      expect(actions.has?(:ignore)).to eq(true)
+      expect(actions.has?(:agree_and_delete)).to eq(false)
+      expect(actions.has?(:delete_and_ignore)).to eq(false)
+    end
+
+    it "keeps delete actions for staff when the boost topic is deleted" do
+      topic.trash!(admin)
+
+      actions = reviewable.actions_for(admin.guardian)
+
+      expect(actions.has?(:agree_and_delete)).to eq(true)
+      expect(actions.has?(:delete_and_ignore)).to eq(true)
+    end
+
+    it "hides delete actions for category moderators when the boost topic is deleted" do
+      SiteSetting.enable_category_group_moderation = true
+      category_moderator = Fabricate(:user)
+      group = Fabricate(:group)
+      group.add(category_moderator)
+      Fabricate(:category_moderation_group, category: topic.category, group: group)
+      topic.trash!(admin)
+
+      actions = reviewable.actions_for(category_moderator.guardian)
+
+      expect(actions.has?(:ignore)).to eq(true)
+      expect(actions.has?(:agree_and_delete)).to eq(false)
+      expect(actions.has?(:delete_and_ignore)).to eq(false)
+    end
   end
 
   describe "#perform_agree_and_delete" do
