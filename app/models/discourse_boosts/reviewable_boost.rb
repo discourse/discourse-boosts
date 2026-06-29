@@ -35,7 +35,10 @@ module DiscourseBoosts
 
     def build_combined_actions(actions, guardian, args)
       return unless pending?
-      return build_action(actions, :ignore, icon: "up-right-from-square") if boost.blank?
+      post = boost&.post
+      if boost.blank? || post.blank? || post.trashed? || (post.topic.blank? && !guardian.is_staff?)
+        return build_action(actions, :ignore, icon: "up-right-from-square")
+      end
 
       agree =
         actions.add_bundle(
