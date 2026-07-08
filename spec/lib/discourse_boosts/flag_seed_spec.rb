@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "rails_helper"
-
 RSpec.describe "Flag seed for DiscourseBoosts::Boost" do
   def run_seed
     load Rails.root.join("plugins", "discourse-boosts", "db", "fixtures", "004_flags.rb")

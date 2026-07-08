@@ -4,11 +4,7 @@ RSpec.describe DiscourseBoosts::Boost::List do
   describe described_class::Contract, type: :model do
     it { is_expected.to validate_presence_of(:username) }
     it { is_expected.to validate_presence_of(:direction) }
-    it do
-      is_expected.to validate_inclusion_of(:direction).in_array(
-        %w[given received]
-      )
-    end
+    it { is_expected.to validate_inclusion_of(:direction).in_array(%w[given received]) }
   end
 
   describe ".call" do
@@ -66,20 +62,13 @@ RSpec.describe DiscourseBoosts::Boost::List do
         end
 
         it "returns boosts in descending ID order" do
-          newer_boost =
-            Fabricate(
-              :boost,
-              post: Fabricate(:post, topic: topic),
-              user: acting_user
-            )
+          newer_boost = Fabricate(:boost, post: Fabricate(:post, topic: topic), user: acting_user)
 
           expect(result[:boosts].map(&:id)).to eq([newer_boost.id, boost.id])
         end
 
         it "limits results to PAGE_SIZE" do
-          stub_const(described_class, "PAGE_SIZE", 1) do
-            expect(result[:boosts].length).to eq(1)
-          end
+          stub_const(described_class, "PAGE_SIZE", 1) { expect(result[:boosts].length).to eq(1) }
         end
 
         it "does not return boosts received on the target user's posts" do
@@ -90,9 +79,7 @@ RSpec.describe DiscourseBoosts::Boost::List do
 
         context "with pagination" do
           fab!(:newer_post) { Fabricate(:post, topic: topic) }
-          fab!(:newer_boost) do
-            Fabricate(:boost, post: newer_post, user: acting_user)
-          end
+          fab!(:newer_boost) { Fabricate(:boost, post: newer_post, user: acting_user) }
 
           it "returns only boosts with an ID lower than before_boost_id" do
             result_with_cursor =
@@ -100,9 +87,9 @@ RSpec.describe DiscourseBoosts::Boost::List do
                 params: {
                   username: acting_user.username,
                   direction: "given",
-                  before_boost_id: newer_boost.id
+                  before_boost_id: newer_boost.id,
                 },
-                **dependencies
+                **dependencies,
               )
             expect(result_with_cursor[:boosts]).to contain_exactly(boost)
           end
@@ -110,12 +97,8 @@ RSpec.describe DiscourseBoosts::Boost::List do
 
         context "when post is in a private message" do
           fab!(:pm_topic, :private_message_topic)
-          fab!(:pm_post) do
-            Fabricate(:post, topic: pm_topic, user: post_author)
-          end
-          fab!(:pm_boost) do
-            Fabricate(:boost, post: pm_post, user: acting_user)
-          end
+          fab!(:pm_post) { Fabricate(:post, topic: pm_topic, user: post_author) }
+          fab!(:pm_boost) { Fabricate(:boost, post: pm_post, user: acting_user) }
 
           it "does not include boosts on private messages" do
             expect(result[:boosts]).to contain_exactly(boost)
@@ -123,15 +106,9 @@ RSpec.describe DiscourseBoosts::Boost::List do
         end
 
         context "when post is in an unlisted topic" do
-          fab!(:unlisted_topic) do
-            Fabricate(:topic, category: category, visible: false)
-          end
-          fab!(:unlisted_post) do
-            Fabricate(:post, topic: unlisted_topic, user: post_author)
-          end
-          fab!(:unlisted_boost) do
-            Fabricate(:boost, post: unlisted_post, user: acting_user)
-          end
+          fab!(:unlisted_topic) { Fabricate(:topic, category: category, visible: false) }
+          fab!(:unlisted_post) { Fabricate(:post, topic: unlisted_topic, user: post_author) }
+          fab!(:unlisted_boost) { Fabricate(:boost, post: unlisted_post, user: acting_user) }
 
           it "does not include boosts on unlisted topics" do
             expect(result[:boosts]).to contain_exactly(boost)
@@ -140,16 +117,9 @@ RSpec.describe DiscourseBoosts::Boost::List do
 
         context "when post is a whisper" do
           fab!(:whisper_post) do
-            Fabricate(
-              :post,
-              topic: topic,
-              user: post_author,
-              post_type: Post.types[:whisper]
-            )
+            Fabricate(:post, topic: topic, user: post_author, post_type: Post.types[:whisper])
           end
-          fab!(:whisper_boost) do
-            Fabricate(:boost, post: whisper_post, user: acting_user)
-          end
+          fab!(:whisper_boost) { Fabricate(:boost, post: whisper_post, user: acting_user) }
 
           it "does not include boosts on whispers" do
             expect(result[:boosts]).to contain_exactly(boost)
@@ -157,29 +127,19 @@ RSpec.describe DiscourseBoosts::Boost::List do
         end
 
         context "when post is hidden" do
-          fab!(:hidden_post) do
-            Fabricate(:post, topic: topic, user: post_author, hidden: true)
-          end
-          fab!(:hidden_boost) do
-            Fabricate(:boost, post: hidden_post, user: acting_user)
-          end
+          fab!(:hidden_post) { Fabricate(:post, topic: topic, user: post_author, hidden: true) }
+          fab!(:hidden_boost) { Fabricate(:boost, post: hidden_post, user: acting_user) }
           fab!(:viewer, :user)
           fab!(:admin, :admin)
 
           it "filters boosts according to hidden-post visibility" do
-            anonymous_result =
-              described_class.call(params:, guardian: Guardian.new(nil))
-            viewer_result =
-              described_class.call(params:, guardian: viewer.guardian)
-            admin_result =
-              described_class.call(params:, guardian: admin.guardian)
+            anonymous_result = described_class.call(params:, guardian: Guardian.new(nil))
+            viewer_result = described_class.call(params:, guardian: viewer.guardian)
+            admin_result = described_class.call(params:, guardian: admin.guardian)
 
             expect(anonymous_result[:boosts]).to contain_exactly(boost)
             expect(viewer_result[:boosts]).to contain_exactly(boost)
-            expect(admin_result[:boosts]).to contain_exactly(
-              boost,
-              hidden_boost
-            )
+            expect(admin_result[:boosts]).to contain_exactly(boost, hidden_boost)
           end
 
           it "includes hidden boosts for members of hidden_post_visible_groups" do
@@ -196,11 +156,7 @@ RSpec.describe DiscourseBoosts::Boost::List do
             SiteSetting.enable_category_group_moderation = true
             group = Fabricate(:group)
             group.add(viewer)
-            Fabricate(
-              :category_moderation_group,
-              category: category,
-              group: group
-            )
+            Fabricate(:category_moderation_group, category: category, group: group)
 
             result = described_class.call(params:, guardian: viewer.guardian)
 
@@ -210,16 +166,9 @@ RSpec.describe DiscourseBoosts::Boost::List do
 
         context "when post is deleted" do
           fab!(:deleted_post) do
-            Fabricate(
-              :post,
-              topic: topic,
-              user: post_author,
-              deleted_at: Time.zone.now
-            )
+            Fabricate(:post, topic: topic, user: post_author, deleted_at: Time.zone.now)
           end
-          fab!(:deleted_post_boost) do
-            Fabricate(:boost, post: deleted_post, user: acting_user)
-          end
+          fab!(:deleted_post_boost) { Fabricate(:boost, post: deleted_post, user: acting_user) }
 
           it "does not include boosts on deleted posts" do
             expect(result[:boosts]).to contain_exactly(boost)
@@ -227,12 +176,8 @@ RSpec.describe DiscourseBoosts::Boost::List do
         end
 
         context "when topic is deleted" do
-          fab!(:deleted_topic) do
-            Fabricate(:topic, category: category, deleted_at: Time.zone.now)
-          end
-          fab!(:deleted_topic_post) do
-            Fabricate(:post, topic: deleted_topic, user: post_author)
-          end
+          fab!(:deleted_topic) { Fabricate(:topic, category: category, deleted_at: Time.zone.now) }
+          fab!(:deleted_topic_post) { Fabricate(:post, topic: deleted_topic, user: post_author) }
           fab!(:deleted_topic_boost) do
             Fabricate(:boost, post: deleted_topic_post, user: acting_user)
           end
@@ -243,18 +188,10 @@ RSpec.describe DiscourseBoosts::Boost::List do
         end
 
         context "when post is in a restricted category" do
-          fab!(:restricted_category) do
-            Fabricate(:private_category, group: Fabricate(:group))
-          end
-          fab!(:restricted_topic) do
-            Fabricate(:topic, category: restricted_category)
-          end
-          fab!(:restricted_post) do
-            Fabricate(:post, topic: restricted_topic, user: post_author)
-          end
-          fab!(:restricted_boost) do
-            Fabricate(:boost, post: restricted_post, user: acting_user)
-          end
+          fab!(:restricted_category) { Fabricate(:private_category, group: Fabricate(:group)) }
+          fab!(:restricted_topic) { Fabricate(:topic, category: restricted_category) }
+          fab!(:restricted_post) { Fabricate(:post, topic: restricted_topic, user: post_author) }
+          fab!(:restricted_boost) { Fabricate(:boost, post: restricted_post, user: acting_user) }
 
           it "does not include boosts on topics in restricted categories" do
             expect(result[:boosts]).to contain_exactly(boost)
@@ -263,13 +200,9 @@ RSpec.describe DiscourseBoosts::Boost::List do
 
         context "when target user has an inactive account" do
           fab!(:inactive_user) { Fabricate(:user, active: false) }
-          fab!(:inactive_boost) do
-            Fabricate(:boost, post: post, user: inactive_user)
-          end
+          fab!(:inactive_boost) { Fabricate(:boost, post: post, user: inactive_user) }
 
-          let(:params) do
-            { username: inactive_user.username, direction: "given" }
-          end
+          let(:params) { { username: inactive_user.username, direction: "given" } }
 
           it { is_expected.to fail_to_find_a_model(:target_user) }
 
@@ -284,9 +217,7 @@ RSpec.describe DiscourseBoosts::Boost::List do
           fab!(:viewer, :user)
           let(:dependencies) { { guardian: viewer.guardian } }
 
-          before do
-            Fabricate(:ignored_user, user: viewer, ignored_user: acting_user)
-          end
+          before { Fabricate(:ignored_user, user: viewer, ignored_user: acting_user) }
 
           it "does not include boosts from ignored users" do
             expect(result[:boosts]).to be_empty
@@ -340,25 +271,18 @@ RSpec.describe DiscourseBoosts::Boost::List do
         end
 
         it "limits results to PAGE_SIZE" do
-          stub_const(described_class, "PAGE_SIZE", 1) do
-            expect(result[:boosts].length).to eq(1)
-          end
+          stub_const(described_class, "PAGE_SIZE", 1) { expect(result[:boosts].length).to eq(1) }
         end
 
         it "does not return boosts given by the target user on other users' posts" do
-          other_user_post =
-            Fabricate(:post, topic: topic, user: Fabricate(:user))
+          other_user_post = Fabricate(:post, topic: topic, user: Fabricate(:user))
           Fabricate(:boost, post: other_user_post, user: post_author)
           expect(result[:boosts]).to contain_exactly(boost)
         end
 
         context "with pagination" do
-          fab!(:other_post) do
-            Fabricate(:post, topic: topic, user: post_author)
-          end
-          fab!(:newer_boost) do
-            Fabricate(:boost, post: other_post, user: acting_user)
-          end
+          fab!(:other_post) { Fabricate(:post, topic: topic, user: post_author) }
+          fab!(:newer_boost) { Fabricate(:boost, post: other_post, user: acting_user) }
 
           it "returns only boosts with an ID lower than before_boost_id" do
             result_with_cursor =
@@ -366,9 +290,9 @@ RSpec.describe DiscourseBoosts::Boost::List do
                 params: {
                   username: post_author.username,
                   direction: "received",
-                  before_boost_id: newer_boost.id
+                  before_boost_id: newer_boost.id,
                 },
-                **dependencies
+                **dependencies,
               )
             expect(result_with_cursor[:boosts]).to contain_exactly(boost)
           end
@@ -376,12 +300,8 @@ RSpec.describe DiscourseBoosts::Boost::List do
 
         context "when post is in a private message" do
           fab!(:pm_topic, :private_message_topic)
-          fab!(:pm_post) do
-            Fabricate(:post, topic: pm_topic, user: post_author)
-          end
-          fab!(:pm_boost) do
-            Fabricate(:boost, post: pm_post, user: acting_user)
-          end
+          fab!(:pm_post) { Fabricate(:post, topic: pm_topic, user: post_author) }
+          fab!(:pm_boost) { Fabricate(:boost, post: pm_post, user: acting_user) }
 
           it "does not include boosts on private messages" do
             expect(result[:boosts]).to contain_exactly(boost)
@@ -389,12 +309,8 @@ RSpec.describe DiscourseBoosts::Boost::List do
         end
 
         context "when post is hidden" do
-          fab!(:hidden_post) do
-            Fabricate(:post, topic: topic, user: post_author, hidden: true)
-          end
-          fab!(:hidden_boost) do
-            Fabricate(:boost, post: hidden_post, user: acting_user)
-          end
+          fab!(:hidden_post) { Fabricate(:post, topic: topic, user: post_author, hidden: true) }
+          fab!(:hidden_boost) { Fabricate(:boost, post: hidden_post, user: acting_user) }
 
           it "still includes boosts on the target user's own hidden posts" do
             expect(result[:boosts]).to contain_exactly(boost, hidden_boost)
@@ -403,16 +319,9 @@ RSpec.describe DiscourseBoosts::Boost::List do
 
         context "when post is deleted" do
           fab!(:deleted_post) do
-            Fabricate(
-              :post,
-              topic: topic,
-              user: post_author,
-              deleted_at: Time.zone.now
-            )
+            Fabricate(:post, topic: topic, user: post_author, deleted_at: Time.zone.now)
           end
-          fab!(:deleted_post_boost) do
-            Fabricate(:boost, post: deleted_post, user: acting_user)
-          end
+          fab!(:deleted_post_boost) { Fabricate(:boost, post: deleted_post, user: acting_user) }
 
           it "does not include boosts on deleted posts" do
             expect(result[:boosts]).to contain_exactly(boost)
@@ -420,12 +329,8 @@ RSpec.describe DiscourseBoosts::Boost::List do
         end
 
         context "when topic is deleted" do
-          fab!(:deleted_topic) do
-            Fabricate(:topic, category: category, deleted_at: Time.zone.now)
-          end
-          fab!(:deleted_topic_post) do
-            Fabricate(:post, topic: deleted_topic, user: post_author)
-          end
+          fab!(:deleted_topic) { Fabricate(:topic, category: category, deleted_at: Time.zone.now) }
+          fab!(:deleted_topic_post) { Fabricate(:post, topic: deleted_topic, user: post_author) }
           fab!(:deleted_topic_boost) do
             Fabricate(:boost, post: deleted_topic_post, user: acting_user)
           end
@@ -436,13 +341,7 @@ RSpec.describe DiscourseBoosts::Boost::List do
         end
 
         context "when booster is ignored by the viewer" do
-          before do
-            Fabricate(
-              :ignored_user,
-              user: post_author,
-              ignored_user: acting_user
-            )
-          end
+          before { Fabricate(:ignored_user, user: post_author, ignored_user: acting_user) }
 
           it "does not include boosts from ignored users" do
             expect(result[:boosts]).to be_empty

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "rails_helper"
 require_relative "../support/api_schema_matcher"
 
 RSpec.describe DiscourseBoosts::BoostsController do
@@ -8,9 +7,7 @@ RSpec.describe DiscourseBoosts::BoostsController do
   fab!(:post_author, :user)
   fab!(:category)
   fab!(:topic) { Fabricate(:topic, category: category) }
-  fab!(:target_post, :post) do
-    Fabricate(:post, topic: topic, user: post_author)
-  end
+  fab!(:target_post, :post) { Fabricate(:post, topic: topic, user: post_author) }
 
   before { SiteSetting.discourse_boosts_enabled = true }
 
@@ -22,20 +19,14 @@ RSpec.describe DiscourseBoosts::BoostsController do
       end
 
       it "returns a 404" do
-        post "/discourse-boosts/posts/#{target_post.id}/boosts.json",
-             params: {
-               raw: "🎉"
-             }
+        post "/discourse-boosts/posts/#{target_post.id}/boosts.json", params: { raw: "🎉" }
         expect(response.status).to eq(404)
       end
     end
 
     context "when not logged in" do
       it "returns a 403" do
-        post "/discourse-boosts/posts/#{target_post.id}/boosts.json",
-             params: {
-               raw: "🎉"
-             }
+        post "/discourse-boosts/posts/#{target_post.id}/boosts.json", params: { raw: "🎉" }
         expect(response.status).to eq(403)
       end
     end
@@ -44,10 +35,7 @@ RSpec.describe DiscourseBoosts::BoostsController do
       before { sign_in(current_user) }
 
       it "works" do
-        post "/discourse-boosts/posts/#{target_post.id}/boosts.json",
-             params: {
-               raw: "🎉"
-             }
+        post "/discourse-boosts/posts/#{target_post.id}/boosts.json", params: { raw: "🎉" }
 
         expect(response.status).to eq(200)
         expect(response.parsed_body["cooked"]).to include("tada")
@@ -56,10 +44,7 @@ RSpec.describe DiscourseBoosts::BoostsController do
 
       context "when params are invalid" do
         it "returns a 400" do
-          post "/discourse-boosts/posts/#{target_post.id}/boosts.json",
-               params: {
-                 raw: ""
-               }
+          post "/discourse-boosts/posts/#{target_post.id}/boosts.json", params: { raw: "" }
           expect(response.status).to eq(400)
         end
       end
@@ -75,10 +60,7 @@ RSpec.describe DiscourseBoosts::BoostsController do
         fab!(:current_user) { post_author }
 
         it "returns a 403" do
-          post "/discourse-boosts/posts/#{target_post.id}/boosts.json",
-               params: {
-                 raw: "🎉"
-               }
+          post "/discourse-boosts/posts/#{target_post.id}/boosts.json", params: { raw: "🎉" }
           expect(response.status).to eq(403)
         end
       end
@@ -90,17 +72,14 @@ RSpec.describe DiscourseBoosts::BoostsController do
           notification_count =
             Notification.where(
               user: post_author,
-              notification_type: Notification.types[:boost]
+              notification_type: Notification.types[:boost],
             ).count
           messages = nil
 
           expect do
             messages =
               MessageBus.track_publish("/topic/#{topic.id}") do
-                post "/discourse-boosts/posts/#{target_post.id}/boosts.json",
-                     params: {
-                       raw: "🎉"
-                     }
+                post "/discourse-boosts/posts/#{target_post.id}/boosts.json", params: { raw: "🎉" }
               end
           end.not_to change { DiscourseBoosts::Boost.count }
 
@@ -110,8 +89,8 @@ RSpec.describe DiscourseBoosts::BoostsController do
           expect(
             Notification.where(
               user: post_author,
-              notification_type: Notification.types[:boost]
-            ).count
+              notification_type: Notification.types[:boost],
+            ).count,
           ).to eq(notification_count)
         end
       end
@@ -120,10 +99,7 @@ RSpec.describe DiscourseBoosts::BoostsController do
         before { Fabricate(:boost, post: target_post, user: current_user) }
 
         it "returns a 422" do
-          post "/discourse-boosts/posts/#{target_post.id}/boosts.json",
-               params: {
-                 raw: "🎉"
-               }
+          post "/discourse-boosts/posts/#{target_post.id}/boosts.json", params: { raw: "🎉" }
           expect(response.status).to eq(422)
         end
       end
@@ -132,36 +108,26 @@ RSpec.describe DiscourseBoosts::BoostsController do
         before { SiteSetting.discourse_boosts_max_per_post = 1 }
 
         fab!(:other_user, :user)
-        fab!(:existing_boost) do
-          Fabricate(:boost, post: target_post, user: other_user)
-        end
+        fab!(:existing_boost) { Fabricate(:boost, post: target_post, user: other_user) }
 
         it "returns a 422" do
-          post "/discourse-boosts/posts/#{target_post.id}/boosts.json",
-               params: {
-                 raw: "🎉"
-               }
+          post "/discourse-boosts/posts/#{target_post.id}/boosts.json", params: { raw: "🎉" }
 
           expect(response.status).to eq(422)
           expect(response.parsed_body["errors"].first).to eq(
-            I18n.t("discourse_boosts.post_boost_limit_reached")
+            I18n.t("discourse_boosts.post_boost_limit_reached"),
           )
         end
       end
 
       context "when rate limit is exceeded" do
-        fab!(:other_posts) do
-          Array.new(6) { Fabricate(:post, topic: topic, user: post_author) }
-        end
+        fab!(:other_posts) { Array.new(6) { Fabricate(:post, topic: topic, user: post_author) } }
 
         before { RateLimiter.enable }
 
         it "returns a 429" do
           other_posts.each do |other_post|
-            post "/discourse-boosts/posts/#{other_post.id}/boosts.json",
-                 params: {
-                   raw: "🎉"
-                 }
+            post "/discourse-boosts/posts/#{other_post.id}/boosts.json", params: { raw: "🎉" }
           end
 
           expect(response.status).to eq(429)
@@ -171,17 +137,12 @@ RSpec.describe DiscourseBoosts::BoostsController do
       context "when a duplicate key error occurs while creating the boost" do
         before do
           allow(DiscourseBoosts::Boost).to receive(:create).and_raise(
-            ActiveRecord::RecordNotUnique.new(
-              "duplicate key value violates unique constraint"
-            )
+            ActiveRecord::RecordNotUnique.new("duplicate key value violates unique constraint"),
           )
         end
 
         it "returns a 422" do
-          post "/discourse-boosts/posts/#{target_post.id}/boosts.json",
-               params: {
-                 raw: "🎉"
-               }
+          post "/discourse-boosts/posts/#{target_post.id}/boosts.json", params: { raw: "🎉" }
           expect(response.status).to eq(422)
         end
       end
@@ -247,12 +208,8 @@ RSpec.describe DiscourseBoosts::BoostsController do
       end
 
       context "when rate limit is exceeded" do
-        fab!(:other_posts) do
-          Array.new(6) { Fabricate(:post, topic: topic, user: post_author) }
-        end
-        fab!(:boosts) do
-          other_posts.map { |p| Fabricate(:boost, post: p, user: current_user) }
-        end
+        fab!(:other_posts) { Array.new(6) { Fabricate(:post, topic: topic, user: post_author) } }
+        fab!(:boosts) { other_posts.map { |p| Fabricate(:boost, post: p, user: current_user) } }
 
         before { RateLimiter.enable }
 
@@ -273,7 +230,7 @@ RSpec.describe DiscourseBoosts::BoostsController do
       it "returns a 403" do
         post "/discourse-boosts/boosts/#{boost.id}/flags.json",
              params: {
-               flag_type_id: ReviewableScore.types[:spam]
+               flag_type_id: ReviewableScore.types[:spam],
              }
         expect(response.status).to eq(403)
       end
@@ -285,7 +242,7 @@ RSpec.describe DiscourseBoosts::BoostsController do
       it "works" do
         post "/discourse-boosts/boosts/#{boost.id}/flags.json",
              params: {
-               flag_type_id: ReviewableScore.types[:spam]
+               flag_type_id: ReviewableScore.types[:spam],
              }
         expect(response.status).to eq(200)
       end
@@ -294,21 +251,19 @@ RSpec.describe DiscourseBoosts::BoostsController do
         it "returns a 404" do
           post "/discourse-boosts/boosts/-1/flags.json",
                params: {
-                 flag_type_id: ReviewableScore.types[:spam]
+                 flag_type_id: ReviewableScore.types[:spam],
                }
           expect(response.status).to eq(404)
         end
       end
 
       context "when flagging own boost" do
-        fab!(:boost) do
-          Fabricate(:boost, post: target_post, user: current_user)
-        end
+        fab!(:boost) { Fabricate(:boost, post: target_post, user: current_user) }
 
         it "returns a 403" do
           post "/discourse-boosts/boosts/#{boost.id}/flags.json",
                params: {
-                 flag_type_id: ReviewableScore.types[:spam]
+                 flag_type_id: ReviewableScore.types[:spam],
                }
           expect(response.status).to eq(403)
         end
@@ -321,7 +276,7 @@ RSpec.describe DiscourseBoosts::BoostsController do
           5.times do
             post "/discourse-boosts/boosts/#{boost.id}/flags.json",
                  params: {
-                   flag_type_id: ReviewableScore.types[:spam]
+                   flag_type_id: ReviewableScore.types[:spam],
                  }
           end
           expect(response.status).to eq(429)
@@ -361,9 +316,7 @@ RSpec.describe DiscourseBoosts::BoostsController do
           get "/discourse-boosts/users/#{current_user.username}/boosts-given.json"
 
           expect(response.status).to eq(200)
-          expect(response.parsed_body["boosts"].first["post"]["name"]).to eq(
-            "Post Author Name"
-          )
+          expect(response.parsed_body["boosts"].first["post"]["name"]).to eq("Post Author Name")
         end
       end
 
@@ -376,9 +329,7 @@ RSpec.describe DiscourseBoosts::BoostsController do
           get "/discourse-boosts/users/#{current_user.username}/boosts-given.json"
 
           expect(response.status).to eq(200)
-          expect(response.parsed_body["boosts"].first["post"]).not_to have_key(
-            "name"
-          )
+          expect(response.parsed_body["boosts"].first["post"]).not_to have_key("name")
         end
       end
     end
@@ -395,23 +346,17 @@ RSpec.describe DiscourseBoosts::BoostsController do
       end
 
       context "with before_boost_id pagination" do
-        fab!(:another_post, :post) do
-          Fabricate(:post, topic: topic, user: post_author)
-        end
-        fab!(:newer_boost) do
-          Fabricate(:boost, post: another_post, user: current_user)
-        end
+        fab!(:another_post, :post) { Fabricate(:post, topic: topic, user: post_author) }
+        fab!(:newer_boost) { Fabricate(:boost, post: another_post, user: current_user) }
 
         it "returns only boosts before the given id" do
           get "/discourse-boosts/users/#{current_user.username}/boosts-given.json",
               params: {
-                before_boost_id: newer_boost.id
+                before_boost_id: newer_boost.id,
               }
 
           expect(response.status).to eq(200)
-          expect(response.parsed_body["boosts"].map { |b| b["id"] }).to eq(
-            [boost.id]
-          )
+          expect(response.parsed_body["boosts"].map { |b| b["id"] }).to eq([boost.id])
         end
       end
 
@@ -430,12 +375,10 @@ RSpec.describe DiscourseBoosts::BoostsController do
           topic: topic,
           user: post_author,
           raw: "secret hidden boost post body",
-          hidden: true
+          hidden: true,
         )
       end
-      fab!(:hidden_boost) do
-        Fabricate(:boost, post: hidden_post, user: current_user)
-      end
+      fab!(:hidden_boost) { Fabricate(:boost, post: hidden_post, user: current_user) }
       fab!(:viewer, :user)
       fab!(:admin, :admin)
 
@@ -443,18 +386,14 @@ RSpec.describe DiscourseBoosts::BoostsController do
         get "/discourse-boosts/users/#{current_user.username}/boosts-given.json"
 
         expect(response.status).to eq(200)
-        expect(
-          response.parsed_body["boosts"].map { |b| b["id"] }
-        ).to contain_exactly(boost.id)
+        expect(response.parsed_body["boosts"].map { |b| b["id"] }).to contain_exactly(boost.id)
         expect(response.body).not_to include(hidden_post.raw)
 
         sign_in(viewer)
         get "/discourse-boosts/users/#{current_user.username}/boosts-given.json"
 
         expect(response.status).to eq(200)
-        expect(
-          response.parsed_body["boosts"].map { |b| b["id"] }
-        ).to contain_exactly(boost.id)
+        expect(response.parsed_body["boosts"].map { |b| b["id"] }).to contain_exactly(boost.id)
         expect(response.body).not_to include(hidden_post.raw)
       end
 
@@ -463,9 +402,10 @@ RSpec.describe DiscourseBoosts::BoostsController do
         get "/discourse-boosts/users/#{current_user.username}/boosts-given.json"
 
         expect(response.status).to eq(200)
-        expect(
-          response.parsed_body["boosts"].map { |b| b["id"] }
-        ).to contain_exactly(boost.id, hidden_boost.id)
+        expect(response.parsed_body["boosts"].map { |b| b["id"] }).to contain_exactly(
+          boost.id,
+          hidden_boost.id,
+        )
         expect(response.body).to include(hidden_post.raw)
       end
     end
@@ -505,20 +445,16 @@ RSpec.describe DiscourseBoosts::BoostsController do
 
       context "with before_boost_id pagination" do
         fab!(:other_user, :user)
-        fab!(:newer_boost) do
-          Fabricate(:boost, post: target_post, user: other_user)
-        end
+        fab!(:newer_boost) { Fabricate(:boost, post: target_post, user: other_user) }
 
         it "returns only boosts before the given id" do
           get "/discourse-boosts/users/#{post_author.username}/boosts-received.json",
               params: {
-                before_boost_id: newer_boost.id
+                before_boost_id: newer_boost.id,
               }
 
           expect(response.status).to eq(200)
-          expect(response.parsed_body["boosts"].map { |b| b["id"] }).to eq(
-            [boost.id]
-          )
+          expect(response.parsed_body["boosts"].map { |b| b["id"] }).to eq([boost.id])
         end
       end
     end
