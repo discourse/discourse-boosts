@@ -5,11 +5,11 @@ import didInsert from "@ember/render-modifiers/modifiers/did-insert";
 import { next } from "@ember/runloop";
 import { service } from "@ember/service";
 import { trustHTML } from "@ember/template";
-import DButton from "discourse/components/d-button";
 import EmojiPicker from "discourse/components/emoji-picker";
-import boundAvatarTemplate from "discourse/helpers/bound-avatar-template";
 import KeyValueStore from "discourse/lib/key-value-store";
 import { not } from "discourse/truth-helpers";
+import DButton from "discourse/ui-kit/d-button";
+import dBoundAvatarTemplate from "discourse/ui-kit/helpers/d-bound-avatar-template";
 import { i18n } from "discourse-i18n";
 import BoostEditor from "./boost-editor";
 
@@ -92,7 +92,7 @@ export default class BoostInput extends Component {
       class="discourse-boosts__input-container"
       {{didInsert this.maybeShowTip}}
     >
-      {{boundAvatarTemplate this.currentUser.avatar_template "small"}}
+      {{dBoundAvatarTemplate this.currentUser.avatar_template "small"}}
       <BoostEditor
         @placeholder={{this.placeholder}}
         @onChange={{this.handleChange}}

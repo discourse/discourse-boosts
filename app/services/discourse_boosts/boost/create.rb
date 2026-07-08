@@ -36,10 +36,7 @@ module DiscourseBoosts
     end
 
     def user_has_not_boosted_post(guardian:, post:)
-      !DiscourseBoosts::Boost.exists?(
-        post_id: post.id,
-        user_id: guardian.user.id
-      )
+      !DiscourseBoosts::Boost.exists?(post_id: post.id, user_id: guardian.user.id)
     end
 
     def within_post_boost_limit(post:)
@@ -56,11 +53,7 @@ module DiscourseBoosts
     end
 
     def create_boost(processed_raw:, guardian:, post:)
-      DiscourseBoosts::Boost.create(
-        post:,
-        user: guardian.user,
-        raw: processed_raw
-      )
+      DiscourseBoosts::Boost.create(post:, user: guardian.user, raw: processed_raw)
     end
 
     def publish_change(post:, boost:)
@@ -82,8 +75,8 @@ module DiscourseBoosts
           display_username: boost.user.username,
           display_name: boost.user.name,
           boost_raw: boost.raw,
-          topic_title: boost.post.topic.title
-        }.to_json
+          topic_title: boost.post.topic.title,
+        }.to_json,
       )
     end
   end

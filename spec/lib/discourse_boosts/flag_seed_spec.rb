@@ -1,10 +1,8 @@
 # frozen_string_literal: true
 
-require "rails_helper"
-
-RSpec.describe "Flag seed for DiscourseBoosts::Boost" do
+RSpec.describe "Flag seed for DiscourseBoosts::Boost" do # rubocop:disable RSpec/DescribeClass
   def run_seed
-    load Rails.root.join("plugins", "discourse-boosts", "db", "fixtures", "004_flags.rb")
+    load Rails.root.join("plugins", "discourse-boosts", "db", "fixtures", "004_flags.rb") # rubocop:disable Discourse/Plugins/UseRequireRelative
   end
 
   def remove_boost_from_all_flags

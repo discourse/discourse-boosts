@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "rails_helper"
-
 RSpec.describe DiscourseBoosts::BoostSerializer do
   fab!(:post_author, :user)
   fab!(:boost_author, :user)

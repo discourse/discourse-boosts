@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "rails_helper"
-
 RSpec.describe Post, type: :model do
   before { SiteSetting.discourse_boosts_enabled = true }
 

@@ -7,10 +7,10 @@ import { getOwner } from "@ember/owner";
 import { service } from "@ember/service";
 import { trustHTML } from "@ember/template";
 import FlagModal from "discourse/components/modal/flag";
-import boundAvatarTemplate from "discourse/helpers/bound-avatar-template";
-import concatClass from "discourse/helpers/concat-class";
-import icon from "discourse/helpers/d-icon";
 import { ajax } from "discourse/lib/ajax";
+import dBoundAvatarTemplate from "discourse/ui-kit/helpers/d-bound-avatar-template";
+import dConcatClass from "discourse/ui-kit/helpers/d-concat-class";
+import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import BoostFlag from "../lib/boost-flag";
 
@@ -102,13 +102,13 @@ export default class BoostBubble extends Component {
 
   <template>
     <span
-      class={{concatClass
+      class={{dConcatClass
         "discourse-boosts__bubble"
         (if this.canInteract "--actionable")
         (if this.expanded "--selected")
       }}
     >
-      <a data-user-card={{this.boost.user.username}}>{{boundAvatarTemplate
+      <a data-user-card={{this.boost.user.username}}>{{dBoundAvatarTemplate
           this.boost.user.avatar_template
           "tiny"
         }}</a>
@@ -130,7 +130,7 @@ export default class BoostBubble extends Component {
             class="discourse-boosts__flag btn-transparent"
             aria-label={{i18n "discourse_boosts.flag_boost"}}
             {{on "click" (fn this.flagBoost this.boost)}}
-          >{{icon "flag"}}</button>
+          >{{dIcon "flag"}}</button>
         {{/if}}
         {{#if this.boost.can_delete}}
           <button
@@ -138,7 +138,7 @@ export default class BoostBubble extends Component {
             class="discourse-boosts__delete btn-transparent --danger"
             aria-label={{i18n "discourse_boosts.delete_boost"}}
             {{on "click" (fn this.deleteBoost this.boost)}}
-          >{{icon "trash-can"}}</button>
+          >{{dIcon "trash-can"}}</button>
         {{/if}}
       {{/if}}
     </span>

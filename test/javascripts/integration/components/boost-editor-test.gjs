@@ -20,7 +20,11 @@ module("Integration | Component | BoostEditor", function (hooks) {
 
     await render(
       <template>
-        <BoostEditor @onChange={{onChange}} @placeholder="Say something" as |editor|>
+        <BoostEditor
+          @onChange={{onChange}}
+          @placeholder="Say something"
+          as |editor|
+        >
           <button
             type="button"
             class="test-insert-emoji"
