@@ -16,8 +16,11 @@ module DiscourseBoosts
                 presence: true,
                 inclusion: {
                   in: -> do
-                    ::Flag.enabled.where("'DiscourseBoosts::Boost' = ANY(applies_to)").pluck(:id)
-                  end,
+                    ::Flag
+                      .enabled
+                      .where("'DiscourseBoosts::Boost' = ANY(applies_to)")
+                      .pluck(:id)
+                  end
                 }
     end
 
@@ -40,10 +43,12 @@ module DiscourseBoosts
     end
 
     def can_flag_boost(guardian:, boost:, params:)
-      guardian.user.present? && !guardian.user.silenced? && boost.user_id != guardian.user.id &&
-        guardian.can_see?(boost.post) &&
-        (SiteSetting.allow_flagging_staff || !boost.user&.staff?) &&
-        (!params.take_action && !params.queue_for_review || guardian.is_staff?)
+      guardian.can_flag_boost?(
+        boost,
+        params.flag_type_id,
+        take_action: params.take_action,
+        queue_for_review: params.queue_for_review
+      )
     end
 
     def fetch_existing_reviewable(boost:)
@@ -54,13 +59,18 @@ module DiscourseBoosts
       return true if existing_reviewable.blank?
 
       scores = existing_reviewable.reviewable_scores
-      return false if scores.any? { |rs| rs.user == guardian.user && rs.pending? }
-      if scores.any? { |rs| rs.reviewable_score_type == params.flag_type_id && rs.pending? }
+      if scores.any? { |rs| rs.user == guardian.user && rs.pending? }
+        return false
+      end
+      if scores.any? { |rs|
+           rs.reviewable_score_type == params.flag_type_id && rs.pending?
+         }
         return false
       end
 
       existing_reviewable.pending? ||
-        existing_reviewable.updated_at < SiteSetting.cooldown_hours_until_reflag.to_i.hours.ago
+        existing_reviewable.updated_at <
+          SiteSetting.cooldown_hours_until_reflag.to_i.hours.ago
     end
 
     def create_companion_pm(boost:, params:, guardian:)
@@ -68,31 +78,40 @@ module DiscourseBoosts
 
       flag_type_id = params.flag_type_id
       is_notify_moderators =
-        ReviewableScore.types.slice(:notify_moderators).values.include?(flag_type_id)
-      is_illegal = ReviewableScore.types.slice(:illegal).values.include?(flag_type_id)
+        ReviewableScore
+          .types
+          .slice(:notify_moderators)
+          .values
+          .include?(flag_type_id)
+      is_illegal =
+        ReviewableScore.types.slice(:illegal).values.include?(flag_type_id)
       return unless is_notify_moderators || is_illegal
 
       i18n_key = is_notify_moderators ? "notify_moderators" : "illegal"
 
       title =
-        I18n.t("discourse_boosts.flagging.#{i18n_key}.pm_title", locale: SiteSetting.default_locale)
+        I18n.t(
+          "discourse_boosts.flagging.#{i18n_key}.pm_title",
+          locale: SiteSetting.default_locale
+        )
 
       body =
         I18n.t(
           "discourse_boosts.flagging.#{i18n_key}.pm_body",
           message: params.message,
           link: boost.post.full_url,
-          locale: SiteSetting.default_locale,
+          locale: SiteSetting.default_locale
         )
 
       creator =
         PostCreator.new(
           guardian.user,
           archetype: Archetype.private_message,
-          title: title.truncate(SiteSetting.max_topic_title_length, separator: /\s/),
+          title:
+            title.truncate(SiteSetting.max_topic_title_length, separator: /\s/),
           raw: body,
           subtype: TopicSubtype.notify_moderators,
-          target_group_names: [Group[:moderators].name],
+          target_group_names: [Group[:moderators].name]
         )
 
       post = creator.create
@@ -114,8 +133,8 @@ module DiscourseBoosts
         reviewable_by_moderator: true,
         potential_spam: params.flag_type_id == ReviewableScore.types[:spam],
         payload: {
-          boost_cooked: boost.cooked,
-        },
+          boost_cooked: boost.cooked
+        }
       )
     end
 
@@ -128,7 +147,7 @@ module DiscourseBoosts
         meta_topic_id: companion_post&.topic_id,
         take_action: params.take_action,
         reason: queued_for_review ? "boost_queued_by_staff" : nil,
-        force_review: queued_for_review,
+        force_review: queued_for_review
       )
     end
 

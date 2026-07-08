@@ -3,7 +3,7 @@
 require_relative "../support/api_schema_matcher"
 
 RSpec.describe DiscourseBoosts::BoostsController do
-  fab!(:current_user, :user)
+  fab!(:current_user) { Fabricate(:user, refresh_auto_groups: true) }
   fab!(:post_author, :user)
   fab!(:category)
   fab!(:topic) { Fabricate(:topic, category: category) }
@@ -266,6 +266,29 @@ RSpec.describe DiscourseBoosts::BoostsController do
                  flag_type_id: ReviewableScore.types[:spam],
                }
           expect(response.status).to eq(403)
+        end
+      end
+
+      context "when user is not allowed to flag posts" do
+        fab!(:current_user) do
+          Fabricate(:trust_level_0, refresh_auto_groups: true)
+        end
+
+        before do
+          SiteSetting.flag_post_allowed_groups =
+            Group::AUTO_GROUPS[:trust_level_1]
+        end
+
+        it "returns a 403 without creating a reviewable score" do
+          expect do
+            post "/discourse-boosts/boosts/#{boost.id}/flags.json",
+                 params: {
+                   flag_type_id: ReviewableScore.types[:spam]
+                 }
+          end.not_to change { ReviewableScore.count }
+
+          expect(response.status).to eq(403)
+          expect(response.parsed_body["errors"]).to be_present
         end
       end
 

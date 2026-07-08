@@ -14,7 +14,9 @@ RSpec.describe DiscourseBoosts::BoostSerializer do
 
   describe "#can_flag" do
     it "returns true for a user who is not the boost author" do
-      expect(serialize(Fabricate(:user))[:can_flag]).to eq(true)
+      expect(
+        serialize(Fabricate(:user, refresh_auto_groups: true))[:can_flag]
+      ).to eq(true)
     end
 
     it "returns false for the boost author" do
@@ -23,6 +25,16 @@ RSpec.describe DiscourseBoosts::BoostSerializer do
 
     it "returns false for anonymous users" do
       expect(serialize(nil)[:can_flag]).to eq(false)
+    end
+
+    it "returns false when the user is not allowed to flag posts" do
+      SiteSetting.flag_post_allowed_groups = Group::AUTO_GROUPS[:trust_level_1]
+
+      user = Fabricate(:trust_level_0, refresh_auto_groups: true)
+      serialized = serialize(user)
+
+      expect(serialized[:can_flag]).to eq(false)
+      expect(serialized).not_to have_key(:available_flags)
     end
   end
 

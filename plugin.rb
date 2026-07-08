@@ -35,6 +35,49 @@ after_initialize do
       !post.trashed? && post.user_id.present? && !is_my_own?(post)
   end
 
+  add_to_class(
+    :guardian,
+    :can_flag_boost?
+  ) do |boost, flag_type, take_action: false, queue_for_review: false|
+    return false if !authenticated? || boost.blank?
+
+    post = boost.post
+    return false if post.blank? || !can_see?(post) || post.hidden?
+    return false if user.silenced? || boost.user_id == user.id
+    return false if !SiteSetting.allow_flagging_staff? && boost.user&.staff?
+    return false if (take_action || queue_for_review) && !is_staff?
+
+    post_action_type_view = PostActionTypeView.new
+    flag_name =
+      case flag_type
+      when Flag
+        flag_type.name_key&.to_sym
+      when String, Symbol
+        flag_type.to_sym
+      else
+        post_action_type_view.types[flag_type.to_i] if flag_type.present?
+      end
+    return false if flag_name.blank?
+
+    flag_id = post_action_type_view.flag_types[flag_name]
+    return false if flag_id.blank?
+    if !post_action_type_view.applies_to[flag_id]&.include?(
+         "DiscourseBoosts::Boost"
+       )
+      return false
+    end
+    if post_action_type_view.disabled_flag_types.keys.include?(flag_name)
+      return false
+    end
+
+    user.in_any_groups?(SiteSetting.flag_post_allowed_groups_map) ||
+      post.topic&.private_message? ||
+      (
+        flag_name == :illegal &&
+          SiteSetting.allow_all_users_to_flag_illegal_content
+      )
+  end
+
   TopicView.on_preload do |topic_view|
     if SiteSetting.discourse_boosts_enabled
       topic_view.instance_variable_set(:@posts, topic_view.posts.includes(boosts: :user))
