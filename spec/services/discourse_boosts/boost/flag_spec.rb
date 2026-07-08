@@ -7,7 +7,10 @@ RSpec.describe DiscourseBoosts::Boost::Flag do
 
     it do
       is_expected.to validate_inclusion_of(:flag_type_id).in_array(
-        Flag.enabled.where("'DiscourseBoosts::Boost' = ANY(applies_to)").pluck(:id),
+        Flag
+          .enabled
+          .where("'DiscourseBoosts::Boost' = ANY(applies_to)")
+          .pluck(:id)
       )
     end
   end
@@ -15,14 +18,18 @@ RSpec.describe DiscourseBoosts::Boost::Flag do
   describe ".call" do
     subject(:result) { described_class.call(params:, **dependencies) }
 
-    fab!(:flagger, :user)
+    fab!(:flagger) { Fabricate(:user, refresh_auto_groups: true) }
     fab!(:post_author, :user)
     fab!(:topic)
     fab!(:post) { Fabricate(:post, topic:, user: post_author) }
     fab!(:boost) { Fabricate(:boost, post:, user: post_author) }
 
-    let(:params) { { boost_id: boost.id, flag_type_id: ReviewableScore.types[:spam] } }
+    let(:params) do
+      { boost_id: boost.id, flag_type_id: ReviewableScore.types[:spam] }
+    end
     let(:dependencies) { { guardian: flagger.guardian } }
+
+    before { SiteSetting.discourse_boosts_enabled = true }
 
     context "when contract is invalid" do
       let(:params) { { boost_id: nil } }
@@ -31,7 +38,9 @@ RSpec.describe DiscourseBoosts::Boost::Flag do
     end
 
     context "when boost is not found" do
-      let(:params) { { boost_id: 0, flag_type_id: ReviewableScore.types[:spam] } }
+      let(:params) do
+        { boost_id: 0, flag_type_id: ReviewableScore.types[:spam] }
+      end
 
       it { is_expected.to fail_to_find_a_model(:boost) }
     end
@@ -48,6 +57,17 @@ RSpec.describe DiscourseBoosts::Boost::Flag do
       it { is_expected.to fail_a_policy(:can_flag_boost) }
     end
 
+    context "when user is not allowed to flag posts" do
+      fab!(:flagger) { Fabricate(:trust_level_0, refresh_auto_groups: true) }
+
+      before do
+        SiteSetting.flag_post_allowed_groups =
+          Group::AUTO_GROUPS[:trust_level_1]
+      end
+
+      it { is_expected.to fail_a_policy(:can_flag_boost) }
+    end
+
     context "when boost author is staff and allow_flagging_staff is disabled" do
       before do
         post_author.update!(admin: true)
@@ -58,7 +78,12 @@ RSpec.describe DiscourseBoosts::Boost::Flag do
     end
 
     context "when flag type does not apply to boosts" do
-      let(:params) { { boost_id: boost.id, flag_type_id: ReviewableScore.types[:needs_approval] } }
+      let(:params) do
+        {
+          boost_id: boost.id,
+          flag_type_id: ReviewableScore.types[:needs_approval]
+        }
+      end
 
       it { is_expected.to fail_a_contract }
     end
@@ -70,7 +95,7 @@ RSpec.describe DiscourseBoosts::Boost::Flag do
             created_by: flagger,
             target: boost,
             target_created_by: boost.user,
-            reviewable_by_moderator: true,
+            reviewable_by_moderator: true
           )
         reviewable.add_score(flagger, ReviewableScore.types[:spam])
       end
@@ -87,7 +112,7 @@ RSpec.describe DiscourseBoosts::Boost::Flag do
             created_by: other_flagger,
             target: boost,
             target_created_by: boost.user,
-            reviewable_by_moderator: true,
+            reviewable_by_moderator: true
           )
         reviewable.add_score(other_flagger, ReviewableScore.types[:spam])
       end
@@ -104,14 +129,21 @@ RSpec.describe DiscourseBoosts::Boost::Flag do
             created_by: other_flagger,
             target: boost,
             target_created_by: boost.user,
-            reviewable_by_moderator: true,
+            reviewable_by_moderator: true
           )
         reviewable.add_score(other_flagger, ReviewableScore.types[:off_topic])
-        reviewable.update!(status: Reviewable.statuses[:rejected], updated_at: 1.minute.ago)
-        reviewable.reviewable_scores.update_all(status: ReviewableScore.statuses[:disagreed])
+        reviewable.update!(
+          status: Reviewable.statuses[:rejected],
+          updated_at: 1.minute.ago
+        )
+        reviewable.reviewable_scores.update_all(
+          status: ReviewableScore.statuses[:disagreed]
+        )
       end
 
-      let(:params) { { boost_id: boost.id, flag_type_id: ReviewableScore.types[:off_topic] } }
+      let(:params) do
+        { boost_id: boost.id, flag_type_id: ReviewableScore.types[:off_topic] }
+      end
 
       it { is_expected.to fail_a_policy(:can_flag_again) }
     end
@@ -120,7 +152,9 @@ RSpec.describe DiscourseBoosts::Boost::Flag do
       it { is_expected.to run_successfully }
 
       it "creates a reviewable targeting the boost" do
-        expect { result }.to change { DiscourseBoosts::ReviewableBoost.count }.by(1)
+        expect { result }.to change {
+          DiscourseBoosts::ReviewableBoost.count
+        }.by(1)
 
         reviewable = DiscourseBoosts::ReviewableBoost.last
         expect(reviewable).to have_attributes(
@@ -129,7 +163,7 @@ RSpec.describe DiscourseBoosts::Boost::Flag do
           target_created_by: post_author,
           reviewable_by_moderator: true,
           topic: topic,
-          category_id: topic.category_id,
+          category_id: topic.category_id
         )
         expect(reviewable.payload["boost_cooked"]).to eq(boost.cooked)
       end
@@ -140,7 +174,7 @@ RSpec.describe DiscourseBoosts::Boost::Flag do
         score = ReviewableScore.last
         expect(score).to have_attributes(
           user: flagger,
-          reviewable_score_type: ReviewableScore.types[:spam],
+          reviewable_score_type: ReviewableScore.types[:spam]
         )
       end
 
@@ -152,7 +186,12 @@ RSpec.describe DiscourseBoosts::Boost::Flag do
       end
 
       context "when flagging as off-topic" do
-        let(:params) { { boost_id: boost.id, flag_type_id: ReviewableScore.types[:off_topic] } }
+        let(:params) do
+          {
+            boost_id: boost.id,
+            flag_type_id: ReviewableScore.types[:off_topic]
+          }
+        end
 
         it "does not mark the reviewable as potential spam" do
           result
@@ -165,7 +204,7 @@ RSpec.describe DiscourseBoosts::Boost::Flag do
           {
             boost_id: boost.id,
             flag_type_id: ReviewableScore.types[:notify_moderators],
-            message: "This boost is problematic",
+            message: "This boost is problematic"
           }
         end
 
@@ -176,7 +215,9 @@ RSpec.describe DiscourseBoosts::Boost::Flag do
 
           pm_topic = Topic.where(archetype: Archetype.private_message).last
           expect(pm_topic.subtype).to eq(TopicSubtype.notify_moderators)
-          expect(pm_topic.first_post.raw).to include("This boost is problematic")
+          expect(pm_topic.first_post.raw).to include(
+            "This boost is problematic"
+          )
         end
 
         it "stores the companion PM topic_id on the reviewable score" do
@@ -191,7 +232,7 @@ RSpec.describe DiscourseBoosts::Boost::Flag do
           {
             boost_id: boost.id,
             flag_type_id: ReviewableScore.types[:illegal],
-            message: "This violates the law",
+            message: "This violates the law"
           }
         end
 
@@ -210,7 +251,11 @@ RSpec.describe DiscourseBoosts::Boost::Flag do
 
         let(:dependencies) { { guardian: staff_flagger.guardian } }
         let(:params) do
-          { boost_id: boost.id, flag_type_id: ReviewableScore.types[:spam], take_action: true }
+          {
+            boost_id: boost.id,
+            flag_type_id: ReviewableScore.types[:spam],
+            take_action: true
+          }
         end
 
         it "auto-approves the reviewable and deletes the boost" do
@@ -229,7 +274,11 @@ RSpec.describe DiscourseBoosts::Boost::Flag do
 
       context "when a non-staff user attempts take_action" do
         let(:params) do
-          { boost_id: boost.id, flag_type_id: ReviewableScore.types[:spam], take_action: true }
+          {
+            boost_id: boost.id,
+            flag_type_id: ReviewableScore.types[:spam],
+            take_action: true
+          }
         end
 
         it { is_expected.to fail_a_policy(:can_flag_boost) }
@@ -240,7 +289,11 @@ RSpec.describe DiscourseBoosts::Boost::Flag do
 
         let(:dependencies) { { guardian: staff_flagger.guardian } }
         let(:params) do
-          { boost_id: boost.id, flag_type_id: ReviewableScore.types[:spam], queue_for_review: true }
+          {
+            boost_id: boost.id,
+            flag_type_id: ReviewableScore.types[:spam],
+            queue_for_review: true
+          }
         end
 
         it "sets force_review and reason on the score" do
@@ -258,7 +311,11 @@ RSpec.describe DiscourseBoosts::Boost::Flag do
 
       context "when a non-staff user attempts queue_for_review" do
         let(:params) do
-          { boost_id: boost.id, flag_type_id: ReviewableScore.types[:spam], queue_for_review: true }
+          {
+            boost_id: boost.id,
+            flag_type_id: ReviewableScore.types[:spam],
+            queue_for_review: true
+          }
         end
 
         it { is_expected.to fail_a_policy(:can_flag_boost) }
