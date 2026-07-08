@@ -3,11 +3,11 @@ import { tracked } from "@glimmer/tracking";
 import { action } from "@ember/object";
 import { trustHTML } from "@ember/template";
 import PostList from "discourse/components/post-list";
-import avatar from "discourse/helpers/avatar";
 import hideApplicationFooter from "discourse/helpers/hide-application-footer";
 import { ajax } from "discourse/lib/ajax";
 import { addUniqueValuesToArray } from "discourse/lib/array-tools";
 import { userPath } from "discourse/lib/url";
+import dAvatar from "discourse/ui-kit/helpers/d-avatar";
 import { i18n } from "discourse-i18n";
 import { flattenBoost, PAGE_SIZE } from "../lib/boosts-stream";
 
@@ -67,7 +67,7 @@ export default class BoostsStream extends Component {
             data-user-card={{boost.booster.username}}
             class="discourse-boosts-activity__avatar"
           >
-            {{avatar boost.booster imageSize="tiny"}}
+            {{dAvatar boost.booster imageSize="tiny"}}
           </a>
           <span class="discourse-boosts-activity__cooked">{{trustHTML
               boost.boost_cooked
