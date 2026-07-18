@@ -270,20 +270,15 @@ RSpec.describe DiscourseBoosts::BoostsController do
       end
 
       context "when user is not allowed to flag posts" do
-        fab!(:current_user) do
-          Fabricate(:trust_level_0, refresh_auto_groups: true)
-        end
+        fab!(:current_user) { Fabricate(:trust_level_0, refresh_auto_groups: true) }
 
-        before do
-          SiteSetting.flag_post_allowed_groups =
-            Group::AUTO_GROUPS[:trust_level_1]
-        end
+        before { SiteSetting.flag_post_allowed_groups = Group::AUTO_GROUPS[:trust_level_1] }
 
         it "returns a 403 without creating a reviewable score" do
           expect do
             post "/discourse-boosts/boosts/#{boost.id}/flags.json",
                  params: {
-                   flag_type_id: ReviewableScore.types[:spam]
+                   flag_type_id: ReviewableScore.types[:spam],
                  }
           end.not_to change { ReviewableScore.count }
 
