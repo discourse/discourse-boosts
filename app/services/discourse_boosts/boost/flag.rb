@@ -55,16 +55,11 @@ module DiscourseBoosts
       Reviewable.includes(:reviewable_scores).find_by(target: boost)
     end
 
-    def can_flag_again(guardian:, existing_reviewable:, params:)
+    def can_flag_again(guardian:, existing_reviewable:)
       return true if existing_reviewable.blank?
 
       scores = existing_reviewable.reviewable_scores
       if scores.any? { |rs| rs.user == guardian.user && rs.pending? }
-        return false
-      end
-      if scores.any? { |rs|
-           rs.reviewable_score_type == params.flag_type_id && rs.pending?
-         }
         return false
       end
 

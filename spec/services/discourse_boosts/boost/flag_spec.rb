@@ -103,7 +103,7 @@ RSpec.describe DiscourseBoosts::Boost::Flag do
       it { is_expected.to fail_a_policy(:can_flag_again) }
     end
 
-    context "when flag type already has a pending score" do
+    context "when another user has a pending flag on the boost" do
       fab!(:other_flagger, :user)
 
       before do
@@ -117,7 +117,15 @@ RSpec.describe DiscourseBoosts::Boost::Flag do
         reviewable.add_score(other_flagger, ReviewableScore.types[:spam])
       end
 
-      it { is_expected.to fail_a_policy(:can_flag_again) }
+      it "adds the user's score to the existing reviewable" do
+        expect { result }.to change { ReviewableScore.count }.by(1)
+
+        reviewable = DiscourseBoosts::ReviewableBoost.find_by!(target: boost)
+        expect(reviewable.reviewable_scores.pluck(:user_id)).to contain_exactly(
+          flagger.id,
+          other_flagger.id
+        )
+      end
     end
 
     context "when reviewable was recently handled" do
