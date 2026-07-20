@@ -14,9 +14,7 @@ RSpec.describe DiscourseBoosts::BoostSerializer do
 
   describe "#can_flag" do
     it "returns true for a user who is not the boost author" do
-      expect(
-        serialize(Fabricate(:user, refresh_auto_groups: true))[:can_flag]
-      ).to eq(true)
+      expect(serialize(Fabricate(:user, refresh_auto_groups: true))[:can_flag]).to eq(true)
     end
 
     it "returns false for the boost author" do

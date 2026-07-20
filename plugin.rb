@@ -37,7 +37,7 @@ after_initialize do
 
   add_to_class(
     :guardian,
-    :can_flag_boost?
+    :can_flag_boost?,
   ) do |boost, flag_type, take_action: false, queue_for_review: false|
     return false if !authenticated? || boost.blank?
 
@@ -61,21 +61,11 @@ after_initialize do
 
     flag_id = post_action_type_view.flag_types[flag_name]
     return false if flag_id.blank?
-    if !post_action_type_view.applies_to[flag_id]&.include?(
-         "DiscourseBoosts::Boost"
-       )
-      return false
-    end
-    if post_action_type_view.disabled_flag_types.keys.include?(flag_name)
-      return false
-    end
+    return false if !post_action_type_view.applies_to[flag_id]&.include?("DiscourseBoosts::Boost")
+    return false if post_action_type_view.disabled_flag_types.keys.include?(flag_name)
 
-    user.in_any_groups?(SiteSetting.flag_post_allowed_groups_map) ||
-      post.topic&.private_message? ||
-      (
-        flag_name == :illegal &&
-          SiteSetting.allow_all_users_to_flag_illegal_content
-      )
+    user.in_any_groups?(SiteSetting.flag_post_allowed_groups_map) || post.topic&.private_message? ||
+      (flag_name == :illegal && SiteSetting.allow_all_users_to_flag_illegal_content)
   end
 
   TopicView.on_preload do |topic_view|
