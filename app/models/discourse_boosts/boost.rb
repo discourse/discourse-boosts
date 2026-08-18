@@ -13,6 +13,12 @@ module DiscourseBoosts
     MAX_VISIBLE_LENGTH = 16
     MAX_EMOJI = 5
 
+    EMOJI_SHORTCODE_REGEXP = /:[a-z0-9_+-]+(?::t\d)?:/
+    VARIATION_SELECTOR = "\uFE0F"
+    # Object replacement character, stands in for an emoji shortcode while
+    # measuring so `:tada:` counts as a single visible character.
+    EMOJI_PLACEHOLDER = "\uFFFC"
+
     validates :post_id, uniqueness: { scope: :user_id }
     validates :raw, presence: true, length: { maximum: 1000 }
     validate :raw_visible_length
@@ -21,12 +27,7 @@ module DiscourseBoosts
     def raw_visible_length
       return if raw.blank?
 
-      visible =
-        normalized_raw.gsub(/:[a-z0-9_+-]+(?::t\d)?:/) do |match|
-          Emoji.exists?(match[1..-2].sub(/:t\d$/, "")) ? "x" : match
-        end
-
-      if visible.length > MAX_VISIBLE_LENGTH
+      if raw_stats[:visible_length] > MAX_VISIBLE_LENGTH
         errors.add(:raw, I18n.t("discourse_boosts.boost_too_long", count: MAX_VISIBLE_LENGTH))
       end
     end
@@ -34,18 +35,38 @@ module DiscourseBoosts
     def raw_emoji_count
       return if raw.blank?
 
-      count =
-        normalized_raw
-          .scan(/:[a-z0-9_+-]+(?::t\d)?:/)
-          .count { |match| Emoji.exists?(match[1..-2].sub(/:t\d$/, "")) }
-
-      if count > MAX_EMOJI
+      if raw_stats[:emoji_count] > MAX_EMOJI
         errors.add(:raw, I18n.t("discourse_boosts.too_many_emoji", count: MAX_EMOJI))
       end
     end
 
-    def normalized_raw
-      @normalized_raw ||= Emoji.unicode_unescape(raw)
+    # Emoji count as one visible character each, whether they were written as a
+    # shortcode (`:tada:`) or as native Unicode. Unicode is measured a grapheme
+    # cluster at a time so multi-codepoint sequences (👨‍👩‍👧‍👦, 👍🏻) count as
+    # one, which is what the editor shows and what it counts client side.
+    def raw_stats
+      emoji_count = 0
+      denied = Emoji.denied || []
+
+      clusters =
+        raw
+          .gsub(EMOJI_SHORTCODE_REGEXP) do |shortcode|
+            next shortcode unless Emoji.exists?(shortcode[1..-2].sub(/:t\d$/, ""))
+            emoji_count += 1
+            EMOJI_PLACEHOLDER
+          end
+          .grapheme_clusters
+
+      emoji_count += clusters.count { |cluster| unicode_emoji?(cluster, denied) }
+
+      { visible_length: clusters.size, emoji_count: emoji_count }
+    end
+
+    # Denied emoji are left as plain text when cooking, so they don't count.
+    def unicode_emoji?(cluster, denied = Emoji.denied || [])
+      replacements = Emoji.unicode_replacements
+      name = replacements[cluster] || replacements[cluster.delete(VARIATION_SELECTOR)]
+      name.present? && denied.exclude?(name.sub(/:t\d$/, ""))
     end
 
     validates :cooked, presence: true
