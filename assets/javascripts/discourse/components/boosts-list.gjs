@@ -65,6 +65,7 @@ export default class BoostsList extends Component {
               @icon="rocket"
               @title={{i18n "discourse_boosts.boost_button_title"}}
               @modalForMobile={{false}}
+              @closeOnScroll={{true}}
               @onRegisterApi={{this.onRegisterApi}}
               @triggerClass="discourse-boosts__add-btn btn-flat"
               @triggers={{hash

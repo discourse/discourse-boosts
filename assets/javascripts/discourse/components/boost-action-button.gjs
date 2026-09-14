@@ -33,6 +33,7 @@ export default class BoostActionButton extends Component {
         @icon="rocket"
         @title={{i18n "discourse_boosts.boost_button_title"}}
         @modalForMobile={{false}}
+        @closeOnScroll={{true}}
         @onRegisterApi={{this.onRegisterApi}}
         @triggerClass="post-action-menu__boost boost btn-flat"
         @triggers={{hash
