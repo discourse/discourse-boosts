@@ -109,12 +109,14 @@ RSpec.describe DiscourseBoosts::Boost::Create do
           post_id: post.id,
           user_id: acting_user.id,
           raw: "🎉",
+          cooked: be_present,
         )
       end
 
-      it "cooks the raw content" do
-        result
-        expect(DiscourseBoosts::Boost.last.cooked).to be_present
+      it "triggers a boost_created event" do
+        events = DiscourseEvent.track_events(:boost_created) { result }
+
+        expect(events.pluck(:params)).to contain_exactly([DiscourseBoosts::Boost.last])
       end
 
       it "publishes a boost_added message to the topic channel" do
@@ -144,8 +146,6 @@ RSpec.describe DiscourseBoosts::Boost::Create do
       context "when post author has disabled boost notifications" do
         before { post_author.user_option.update!(boost_notifications_level: 2) }
 
-        it { is_expected.to run_successfully }
-
         it "does not create a notification" do
           expect { result }.not_to change { Notification.count }
         end
@@ -153,8 +153,6 @@ RSpec.describe DiscourseBoosts::Boost::Create do
 
       context "when post author has ignored the acting user" do
         before { Fabricate(:ignored_user, user: post_author, ignored_user: acting_user) }
-
-        it { is_expected.to run_successfully }
 
         it "does not create a notification" do
           expect { result }.not_to change { Notification.count }

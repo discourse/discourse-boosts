@@ -21,6 +21,12 @@ end
 require_relative "lib/discourse_boosts/engine"
 
 after_initialize do
+  if respond_to?(:register_discourse_workflows_node)
+    register_discourse_workflows_node do
+      [DiscourseWorkflows::Nodes::Boost::V1, DiscourseWorkflows::Nodes::PostBoostChanged::V1]
+    end
+  end
+
   reloadable_patch do |plugin|
     Post.prepend DiscourseBoosts::PostExtension
     UserOption.prepend DiscourseBoosts::UserOptionExtension

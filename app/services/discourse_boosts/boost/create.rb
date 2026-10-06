@@ -22,6 +22,7 @@ module DiscourseBoosts
     model :processed_raw
     model :boost, :create_boost
 
+    step :trigger_boost_created
     step :publish_change
     only_if(:notify_post_author?) { step :create_notification }
 
@@ -54,6 +55,10 @@ module DiscourseBoosts
 
     def create_boost(processed_raw:, guardian:, post:)
       DiscourseBoosts::Boost.create(post:, user: guardian.user, raw: processed_raw)
+    end
+
+    def trigger_boost_created(boost:)
+      DiscourseEvent.trigger(:boost_created, boost)
     end
 
     def publish_change(post:, boost:)
