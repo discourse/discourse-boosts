@@ -8,6 +8,29 @@ en:
     notifications:
       titles:
         boost: "Boost"
+    discourse_workflows:
+      node_unavailable:
+        requires_boosts: "Requires the Boosts plugin to be enabled"
+      nodes:
+        "action:boost": "Boost post"
+        "trigger:post_boost_changed": "Post boost changed"
+      node_descriptions:
+        "action:boost": "Add or remove a boost on a post"
+        "trigger:post_boost_changed": "Fires when a boost on a post is added, replaced or removed. The user is whoever boosted it, not the author."
+      boost:
+        operations:
+          add: "Add boost"
+          remove: "Remove boost"
+        text: "Boost"
+        text_description: "An emoji or short note, up to 16 characters"
+        if_exists: "If the user already boosted"
+        if_exists_description: "Users can only have one boost per post"
+        if_exists_keep: "Keep their boost"
+        if_exists_replace: "Replace their boost"
+      post_boost_changed:
+        changes_added: "Added"
+        changes_replaced: "Replaced"
+        changes_removed: "Removed"
     discourse_boosts:
       action_title: "<b>Boost</b>"
       boost_button_title: "Add a boost"

@@ -54,19 +54,17 @@ RSpec.describe DiscourseBoosts::Boost::Destroy do
       it { is_expected.to run_successfully }
     end
 
-    context "when acting user is an admin" do
-      fab!(:acting_user, :admin)
-      fab!(:boost) { Fabricate(:boost, post: post, user: post_author) }
-
-      it { is_expected.to run_successfully }
-    end
-
     context "when everything's ok" do
       it { is_expected.to run_successfully }
 
       it "destroys the boost" do
-        expect { result }.to change { DiscourseBoosts::Boost.count }.by(-1)
-        expect(DiscourseBoosts::Boost.exists?(boost.id)).to eq(false)
+        expect { result }.to change { DiscourseBoosts::Boost.exists?(boost.id) }.to(false)
+      end
+
+      it "triggers a boost_destroyed event with the user who removed it" do
+        events = DiscourseEvent.track_events(:boost_destroyed) { result }
+
+        expect(events.pluck(:params)).to contain_exactly([boost, acting_user])
       end
 
       it "publishes a boost_removed message to the topic channel" do

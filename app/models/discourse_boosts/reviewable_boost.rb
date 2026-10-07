@@ -84,12 +84,7 @@ module DiscourseBoosts
     end
 
     def perform_agree_and_delete(performed_by, args)
-      agree do
-        if boost
-          DiscourseBoosts::Boost.publish_remove(boost.post, boost.id)
-          boost.destroy!
-        end
-      end
+      agree { delete_boost(performed_by) }
     end
 
     def perform_disagree(performed_by, args)
@@ -101,15 +96,18 @@ module DiscourseBoosts
     end
 
     def perform_delete_and_ignore(performed_by, args)
-      ignore do
-        if boost
-          DiscourseBoosts::Boost.publish_remove(boost.post, boost.id)
-          boost.destroy!
-        end
-      end
+      ignore { delete_boost(performed_by) }
     end
 
     private
+
+    def delete_boost(performed_by)
+      return if boost.blank?
+
+      DiscourseBoosts::Boost.publish_remove(boost.post, boost.id)
+      boost.destroy!
+      DiscourseEvent.trigger(:boost_destroyed, boost, performed_by)
+    end
 
     def agree
       yield if block_given?
@@ -164,7 +162,7 @@ end
 #
 # Indexes
 #
-#  idx_reviewables_score_desc_created_at_desc                  (score,created_at)
+#  idx_reviewables_score_desc_created_at_desc                  (score DESC,created_at DESC)
 #  index_reviewables_on_reviewable_by_group_id                 (reviewable_by_group_id)
 #  index_reviewables_on_status_and_created_at                  (status,created_at)
 #  index_reviewables_on_status_and_score                       (status,score)

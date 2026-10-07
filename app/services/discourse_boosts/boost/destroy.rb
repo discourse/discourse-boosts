@@ -14,6 +14,7 @@ module DiscourseBoosts
     policy :can_destroy_boost
 
     step :destroy_boost
+    step :trigger_boost_destroyed
     step :publish_change
 
     private
@@ -29,6 +30,10 @@ module DiscourseBoosts
 
     def destroy_boost(boost:)
       boost.destroy!
+    end
+
+    def trigger_boost_destroyed(boost:, guardian:)
+      DiscourseEvent.trigger(:boost_destroyed, boost, guardian.user)
     end
 
     def publish_change(boost:)
