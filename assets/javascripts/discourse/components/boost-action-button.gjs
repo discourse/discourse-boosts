@@ -14,6 +14,7 @@ export default class BoostActionButton extends Component {
   }
 
   @service currentUser;
+  @service site;
 
   @action
   onRegisterApi(api) {
@@ -33,7 +34,7 @@ export default class BoostActionButton extends Component {
         @icon="rocket"
         @title={{i18n "discourse_boosts.boost_button_title"}}
         @modalForMobile={{false}}
-        @closeOnScroll={{true}}
+        @closeOnScroll={{this.site.desktopView}}
         @onRegisterApi={{this.onRegisterApi}}
         @triggerClass="post-action-menu__boost boost btn-flat"
         @triggers={{hash
@@ -47,6 +48,7 @@ export default class BoostActionButton extends Component {
             @post={{@post}}
             @onSubmit={{this.onSubmit}}
             @onClose={{this.dMenu.close}}
+            @trigger={{this.dMenu.trigger}}
           />
         </:content>
       </DMenu>
