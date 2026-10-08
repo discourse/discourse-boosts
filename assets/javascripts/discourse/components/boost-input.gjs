@@ -11,6 +11,7 @@ import { not } from "discourse/truth-helpers";
 import DButton from "discourse/ui-kit/d-button";
 import dBoundAvatarTemplate from "discourse/ui-kit/helpers/d-bound-avatar-template";
 import { i18n } from "discourse-i18n";
+import closeOnScrollUnlessFocused from "../modifiers/close-on-scroll-unless-focused";
 import BoostEditor from "./boost-editor";
 
 const STORE_NAMESPACE = "discourse_boosts_";
@@ -91,6 +92,10 @@ export default class BoostInput extends Component {
     <div
       class="discourse-boosts__input-container"
       {{didInsert this.maybeShowTip}}
+      {{(if
+        this.site.mobileView
+        (modifier closeOnScrollUnlessFocused @trigger @onClose)
+      )}}
     >
       {{dBoundAvatarTemplate this.currentUser.avatar_template "small"}}
       <BoostEditor

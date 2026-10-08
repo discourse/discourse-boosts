@@ -12,6 +12,7 @@ import BoostInput from "./boost-input";
 
 export default class BoostsList extends Component {
   @service currentUser;
+  @service site;
 
   get boosts() {
     return this.args.post.boosts || [];
@@ -65,7 +66,7 @@ export default class BoostsList extends Component {
               @icon="rocket"
               @title={{i18n "discourse_boosts.boost_button_title"}}
               @modalForMobile={{false}}
-              @closeOnScroll={{true}}
+              @closeOnScroll={{this.site.desktopView}}
               @onRegisterApi={{this.onRegisterApi}}
               @triggerClass="discourse-boosts__add-btn btn-flat"
               @triggers={{hash
@@ -78,6 +79,7 @@ export default class BoostsList extends Component {
                   @post={{@post}}
                   @onSubmit={{this.addBoostWithRaw}}
                   @onClose={{this.dMenu.close}}
+                  @trigger={{this.dMenu.trigger}}
                 />
               </:content>
             </DMenu>
