@@ -5,6 +5,11 @@ en:
         categories:
           discourse_boosts: "Boosts"
   js:
+    review:
+      types:
+        discourse_boosts_reviewable_boost:
+          title: "Boost"
+          noun: "boost"
     notifications:
       titles:
         boost: "Boost"
