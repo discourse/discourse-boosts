@@ -17,11 +17,28 @@ en:
       node_unavailable:
         requires_boosts: "Requires the Boosts plugin to be enabled"
       nodes:
-        "action:boost": "Boost post"
+        "action:boost": "Boost"
+        "action:boost_post": "Boost post"
+        "action:remove_boost": "Remove boost"
         "trigger:post_boost_changed": "Post boost changed"
+        "trigger:post_boosted": "Post boosted"
+        "trigger:boost_edited": "Boost edited"
+        "trigger:boost_removed": "Boost removed"
+      node_search_terms:
+        "action:boost_post": "add boost, react, emoji, note"
+        "action:remove_boost": "unboost, delete boost"
+        "trigger:post_boosted": "boost added, emoji, note"
+        "trigger:boost_edited": "boost replaced, changed"
+        "trigger:boost_removed": "unboosted, boost deleted"
       node_descriptions:
         "action:boost": "Add or remove a boost on a post"
-        "trigger:post_boost_changed": "Fires when a boost on a post is added, replaced or removed. The user is whoever boosted it, not the author."
+        "action:boost_post": "Boost a post as a user, like the boost button"
+        "action:remove_boost": "Remove a user's own boost from a post"
+        "trigger:post_boost_changed": "Fires when a boost on a post is added, replaced or removed. The user is the post author; the actor is whoever boosted it, or removed it."
+        "trigger:post_boost_changed_v1": "Fires when a boost on a post is added, replaced or removed. The user is whoever boosted it, not the author."
+        "trigger:post_boosted": "Fires when someone boosts a post. The user is the post author; the actor is the booster."
+        "trigger:boost_edited": "Fires when someone changes the text of their boost. The user is the post author; the actor is the booster."
+        "trigger:boost_removed": "Fires when a boost is removed, by its booster or a moderator. The user is the post author; the actor is whoever removed it; booster is whose boost it was."
       boost:
         operations:
           add: "Add boost"
@@ -32,6 +49,15 @@ en:
         if_exists_description: "Users can only have one boost per post"
         if_exists_keep: "Keep their boost"
         if_exists_replace: "Replace their boost"
+      post_boosting:
+        post_id: "Post ID"
+        text: "Boost"
+        text_description: "An emoji or short note, up to 16 characters"
+        if_exists: "If the user already boosted"
+        if_exists_description: "Users can only have one boost per post"
+        if_exists_keep: "Keep their boost"
+        if_exists_replace: "Replace their boost"
+        actor_username: "Performed by user"
       post_boost_changed:
         changes_added: "Added"
         changes_replaced: "Replaced"

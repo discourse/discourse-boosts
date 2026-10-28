@@ -65,6 +65,16 @@ if defined?(DiscourseWorkflows)
             },
           )
 
+          deprecated(
+            superseded_by: "2.0",
+            changes: {
+              "user" => "actor",
+              "removed_by" => "actor",
+            },
+            notice_key: "discourse_workflows.node_deprecated.user_is_post_author",
+            description_key: "discourse_workflows.node_descriptions.trigger:post_boost_changed_v1",
+          )
+
           def self.from_event(event_name, boost, *args)
             case event_name
             when :boost_updated
@@ -102,7 +112,7 @@ if defined?(DiscourseWorkflows)
               previous_text: @previous_text,
               removed_by: (serialize_user(@removed_by) if @removed_by),
               post: serialize_post(@boost.post),
-              topic: topic_data(@boost.post.topic),
+              topic: serialize_topic_list_item(@boost.post.topic),
               user: serialize_user(@boost.user),
             }
           end
