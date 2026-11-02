@@ -102,7 +102,7 @@ if defined?(DiscourseWorkflows)
               previous_text: @previous_text,
               removed_by: (serialize_user(@removed_by) if @removed_by),
               post: serialize_post(@boost.post),
-              topic: topic_data(@boost.post.topic),
+              topic: serialize_topic_list_item(@boost.post.topic),
               user: serialize_user(@boost.user),
             }
           end
