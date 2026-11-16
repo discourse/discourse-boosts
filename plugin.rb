@@ -23,7 +23,16 @@ require_relative "lib/discourse_boosts/engine"
 after_initialize do
   if respond_to?(:register_discourse_workflows_node)
     register_discourse_workflows_node do
-      [DiscourseWorkflows::Nodes::Boost::V1, DiscourseWorkflows::Nodes::PostBoostChanged::V1]
+      [
+        DiscourseWorkflows::Nodes::Boost::V1,
+        DiscourseWorkflows::Nodes::BoostPost::V1,
+        DiscourseWorkflows::Nodes::RemoveBoost::V1,
+        DiscourseWorkflows::Nodes::PostBoostChanged::V1,
+        DiscourseWorkflows::Nodes::PostBoostChanged::V2,
+        DiscourseWorkflows::Nodes::PostBoosted::V1,
+        DiscourseWorkflows::Nodes::BoostEdited::V1,
+        DiscourseWorkflows::Nodes::BoostRemoved::V1,
+      ]
     end
   end
 

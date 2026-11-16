@@ -13,6 +13,8 @@ en:
     discourse_workflows:
       boost:
         cannot_boost: "%{username} can't boost this post."
+      node_upgrades:
+        boost_output: "The output no longer has post_id, username or boost_id. Use post.id, actor.username and boost.id instead, and boost.text instead of text. previous_text and changed are unchanged."
     flagging:
       notify_moderators:
         pm_title: "A boost requires staff attention"

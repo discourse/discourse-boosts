@@ -81,6 +81,23 @@ if defined?(DiscourseWorkflows)
             },
           )
 
+          deprecated(replaced_by: %w[action:boost_post action:remove_boost]) do |parameters|
+            boost_parameters = parameters.slice("post_id", "actor_username")
+            notes = ["discourse_boosts.discourse_workflows.node_upgrades.boost_output"]
+
+            # An operation set by an expression can't be upgraded automatically.
+            case parameters.fetch("operation", "add")
+            when "add"
+              {
+                type: "action:boost_post",
+                parameters: boost_parameters.merge(parameters.slice("text", "if_exists")),
+                notes:,
+              }
+            when "remove"
+              { type: "action:remove_boost", parameters: boost_parameters, notes: }
+            end
+          end
+
           def execute(exec_ctx)
             items =
               exec_ctx.input_items.map.with_index do |_item, item_index|

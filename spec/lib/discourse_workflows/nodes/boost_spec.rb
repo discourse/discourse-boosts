@@ -6,6 +6,36 @@ RSpec.describe DiscourseWorkflows::Nodes::Boost::V1 do
 
   before { SiteSetting.discourse_boosts_enabled = true }
 
+  describe ".upgrade" do
+    let(:boost_parameters) { { "post_id" => "={{ $json.post.id }}", "actor_username" => "system" } }
+    let(:notes) { ["discourse_boosts.discourse_workflows.node_upgrades.boost_output"] }
+
+    it "moves adding to Boost post, keeping the text and if_exists" do
+      parameters =
+        boost_parameters.merge("operation" => "add", "text" => "🚀", "if_exists" => "replace")
+
+      expect(described_class.upgrade(parameters)).to eq(
+        type: "action:boost_post",
+        parameters: parameters.except("operation"),
+        notes:,
+      )
+    end
+
+    it "moves removing to Remove boost" do
+      parameters = boost_parameters.merge("operation" => "remove", "if_exists" => "keep")
+
+      expect(described_class.upgrade(parameters)).to eq(
+        type: "action:remove_boost",
+        parameters: boost_parameters,
+        notes:,
+      )
+    end
+
+    it "leaves a node whose operation is an expression to be replaced by hand" do
+      expect(described_class.upgrade("operation" => "={{ $json.operation }}")).to be_nil
+    end
+  end
+
   describe "#execute" do
     let(:configuration) do
       {
